@@ -315,11 +315,10 @@
 // export default SpeedViolationDashboard;
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Circle, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Circle, Popup, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { AlertTriangle, AlertCircle, TrendingUp, RefreshCcw, Download, BarChart as BarChartIcon, Car, MapPin, Clock, DollarSign, Gauge } from 'lucide-react';
-import VirtualSpeedometer from './VirtualSpeedometer';
 import ZoneSpeedLimitManager from './ZoneSpeedLimitManager';
 import AlertDataViewer from './AlertDataViewer';
 
@@ -348,20 +347,6 @@ const receiveLoRaData = () => {
   };
 };
 
-// Fine calculation function
-const calculateFine = (speed, speedLimit, zoneType) => {
-  const overSpeed = speed - speedLimit;
-  let baseFine = 0;
-  if (overSpeed <= 10) baseFine = 500;
-  else if (overSpeed <= 20) baseFine = 1000;
-  else baseFine = 2000;
-
-  const multiplier = ['School', 'Hospital', 'Hill'].includes(zoneType) ? 2 : 1;
-  return baseFine * multiplier;
-};
-
-
-
 const SpeedViolationDashboard = () => {
   const [alerts, setAlerts] = useState([]);
   const [zoneSpeedLimits, setZoneSpeedLimits] = useState({
@@ -378,13 +363,13 @@ const SpeedViolationDashboard = () => {
   });
   const [statistics, setStatistics] = useState({
     totalViolations: 0,
-    totalFines: 0,
     violationsByZone: {},
     violationsByType: {},
     violationsByHour: Array(24).fill(0)
   });
   const [speedAlert, setSpeedAlert] = useState(null);
   const [showAlertViewer, setShowAlertViewer] = useState(false);
+  const [ticketedVehicles, setTicketedVehicles] = useState([]);
 
   const handleViewData = () => {
     const viewerData = {
@@ -398,10 +383,8 @@ const SpeedViolationDashboard = () => {
   const updateData = useCallback(() => {
     const newData = receiveLoRaData();
     if (newData.speed > zoneSpeedLimits[newData.zone]) {
-      const fine = calculateFine(newData.speed, zoneSpeedLimits[newData.zone], newData.zoneType);
       const newAlert = {
         ...newData,
-        fine: fine,
         id: Date.now(),
       };
       setAlerts(prevAlerts => [newAlert, ...prevAlerts.slice(0, 99)]);
@@ -411,7 +394,6 @@ const SpeedViolationDashboard = () => {
         newViolationsByHour[hour]++;
         return {
           totalViolations: prev.totalViolations + 1,
-          totalFines: prev.totalFines + fine,
           violationsByZone: {
             ...prev.violationsByZone,
             [newData.zone]: (prev.violationsByZone[newData.zone] || 0) + 1
@@ -423,6 +405,8 @@ const SpeedViolationDashboard = () => {
           violationsByHour: newViolationsByHour
         };
       });
+      setTicketedVehicles(prev => [...prev, newAlert]);
+      setSpeedAlert(newAlert);
     }
   }, [zoneSpeedLimits]);
 
@@ -431,28 +415,15 @@ const SpeedViolationDashboard = () => {
     return () => clearInterval(interval);
   }, [updateData]);
 
-  const handleSpeedExceeded = (alertInfo) => {
-    setSpeedAlert(alertInfo);
-    const newAlert = {
-      ...alertInfo,
-      vehicleId: 'VIRTUAL-' + Date.now(),
-      location: { lat: 0, lon: 0 },
-      timestamp: new Date().toISOString(),
-      fine: calculateFine(alertInfo.speed, alertInfo.speedLimit, 'Virtual'),
-      id: Date.now(),
-    };
-    setAlerts(prevAlerts => [newAlert, ...prevAlerts.slice(0, 99)]);
-  };
-
   const handleRefresh = () => {
     setAlerts([]);
     setStatistics({
       totalViolations: 0,
-      totalFines: 0,
       violationsByZone: {},
       violationsByType: {},
       violationsByHour: Array(24).fill(0)
     });
+    setTicketedVehicles([]);
     for (let i = 0; i < 50; i++) {
       updateData();
     }
@@ -462,7 +433,8 @@ const SpeedViolationDashboard = () => {
     const exportData = {
       alerts,
       statistics,
-      zoneSpeedLimits
+      zoneSpeedLimits,
+      ticketedVehicles
     };
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -519,37 +491,31 @@ const SpeedViolationDashboard = () => {
             zoneSpeedLimits={zoneSpeedLimits}
             onSpeedLimitChange={handleSpeedLimitChange}
           />
-          <VirtualSpeedometer
-            zones={Object.keys(zoneSpeedLimits)}
-            zoneSpeedLimits={zoneSpeedLimits}
-            onSpeedExceeded={handleSpeedExceeded}
-          />
         </div>
         <div style={styles.dashboard}>
           {speedAlert && (
             <div style={styles.alertBanner}>
               <AlertTriangle size={24} style={styles.alertIcon} />
-              <p>Speed Alert: {speedAlert.speed} km/h in {speedAlert.zone} (Limit: {speedAlert.speedLimit} km/h)</p>
+              <p>Speed Alert: {speedAlert.speed} km/h in {speedAlert.zone} (Limit: {zoneSpeedLimits[speedAlert.zone]} km/h)</p>
+              <p>Vehicle: {speedAlert.vehicleId} - Ticket issued!</p>
             </div>
           )}
           <div style={{ ...styles.card, gridColumn: 'span 2', gridRow: 'span 2' }}>
             <h2 style={styles.cardHeader}><MapPin style={styles.icon} /> Real-time Map</h2>
             <MapContainer center={[20.5937, 78.9629]} zoom={5} style={{ height: '400px', borderRadius: '8px' }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              {alerts.slice(0, 10).map(alert => (
-                <Circle
-                  key={alert.id}
-                  center={[alert.location.lat, alert.location.lon]}
-                  radius={10000}
-                  pathOptions={{ color: '#FF4136', fillColor: '#FF4136', fillOpacity: 0.5 }}
+              {ticketedVehicles.map(vehicle => (
+                <Marker
+                  key={vehicle.id}
+                  position={[vehicle.location.lat, vehicle.location.lon]}
                 >
                   <Popup>
-                    <strong>{alert.zone}</strong><br />
-                    Vehicle: {alert.vehicleId}<br />
-                    Speed: {alert.speed} km/h<br />
-                    Fine: ₹{alert.fine}
+                    <strong>{vehicle.zone}</strong><br />
+                    Vehicle: {vehicle.vehicleId}<br />
+                    Speed: {vehicle.speed} km/h<br />
+                    Ticket issued!
                   </Popup>
-                </Circle>
+                </Marker>
               ))}
             </MapContainer>
           </div>
@@ -562,9 +528,9 @@ const SpeedViolationDashboard = () => {
                 <p style={styles.statValue}>{statistics.totalViolations}</p>
               </div>
               <div style={styles.statistic}>
-                <DollarSign size={24} style={styles.statIcon} />
-                <p style={styles.statLabel}>Total Fines</p>
-                <p style={styles.statValue}>₹{statistics.totalFines}</p>
+                <AlertTriangle size={24} style={styles.statIcon} />
+                <p style={styles.statLabel}>Tickets Issued</p>
+                <p style={styles.statValue}>{ticketedVehicles.length}</p>
               </div>
             </div>
           </div>
@@ -610,7 +576,7 @@ const SpeedViolationDashboard = () => {
       </div>
       {showAlertViewer && (
         <AlertDataViewer
-          data={{ alerts, statistics, zoneSpeedLimits }}
+          data={{ alerts, statistics, zoneSpeedLimits, ticketedVehicles }}
           onClose={() => setShowAlertViewer(false)}
         />
       )}
