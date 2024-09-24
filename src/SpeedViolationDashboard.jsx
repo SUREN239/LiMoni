@@ -551,13 +551,14 @@ const coimbatoreLocations = [
   { name: 'Gandhipuram', lat: 11.0168, lon: 76.9558, type: 'Urban' },
   { name: 'RS Puram', lat: 11.0050, lon: 76.9592, type: 'Urban' },
   { name: 'Peelamedu', lat: 11.0343, lon: 77.0297, type: 'Urban' },
-  { name: 'Singanallur', lat: 11.0070, lon: 77.0390, type: 'Urban' },
+  { name: 'Singanallur', lat: 11.002260839392395, lon: 77.02435424847182, type: 'Urban' },
   { name: 'Saibaba Colony', lat: 11.0263, lon: 76.9426, type: 'Residential' },
   { name: 'Race Course', lat: 11.0056, lon: 76.9689, type: 'Urban' },
   { name: 'Coimbatore Medical College Hospital', lat: 11.0176, lon: 76.9674, type: 'Hospital' },
-  { name: 'PSG College of Technology', lat: 11.0242, lon: 77.0022, type: 'School' },
+  { name: 'PSG College of Technology', lat: 11.0242, lon: 77.0022, type: 'College' },
   { name: 'CODISSIA Trade Fair Complex', lat: 11.0749, lon: 76.9897, type: 'Industrial' },
-  { name: 'Marudhamalai Hill Temple', lat: 11.0443, lon: 76.8561, type: 'Hill' }
+  { name: 'Marudhamalai Hill Temple', lat: 11.0443, lon: 76.8561, type: 'Hill' },
+  { name: 'Sri Krishna College of Technology', lat: 10.927885915066895, lon:  76.92574603773882, type: 'College' }
 ];
 
 
