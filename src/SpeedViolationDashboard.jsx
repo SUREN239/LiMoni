@@ -315,12 +315,13 @@
 // export default SpeedViolationDashboard;
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Circle, Popup, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { AlertTriangle, AlertCircle, TrendingUp, RefreshCcw, Download, BarChart as BarChartIcon, Car, MapPin, Clock, DollarSign, Gauge } from 'lucide-react';
+import { AlertTriangle, AlertCircle, TrendingUp, RefreshCcw, Download, BarChart as BarChartIcon, Car, MapPin, Clock, DollarSign, Gauge, Ticket, X } from 'lucide-react';
 import ZoneSpeedLimitManager from './ZoneSpeedLimitManager';
 import AlertDataViewer from './AlertDataViewer';
+
 
 // Mock function to simulate receiving data from LoRa module
 const receiveLoRaData = () => {
@@ -370,6 +371,26 @@ const SpeedViolationDashboard = () => {
   const [speedAlert, setSpeedAlert] = useState(null);
   const [showAlertViewer, setShowAlertViewer] = useState(false);
   const [ticketedVehicles, setTicketedVehicles] = useState([]);
+  const [showTickets, setShowTickets] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
+  const handleViewTickets = () => {
+    setShowTickets(true);
+  };
+
+  const handleCloseTickets = () => {
+    setShowTickets(false);
+  };
+
+  const MapEvents = () => {
+    useMapEvents({
+      click(e) {
+        const { lat, lng } = e.latlng;
+        setSelectedLocation({ lat, lng });
+      },
+    });
+    return null;
+  };
 
   const handleViewData = () => {
     const viewerData = {
@@ -477,6 +498,7 @@ const SpeedViolationDashboard = () => {
         <div style={styles.navRight}>
           <button style={styles.navButton} onClick={handleRefresh}><RefreshCcw size={16} /> Refresh</button>
           <button style={styles.navButton} onClick={handleExport}><Download size={16} /> Export</button>
+          <button style={styles.navButton} onClick={handleViewTickets}><Ticket size={16} /> View Tickets</button>
         </div>
       </nav>
       <div style={styles.mainContent}>
@@ -504,6 +526,7 @@ const SpeedViolationDashboard = () => {
             <h2 style={styles.cardHeader}><MapPin style={styles.icon} /> Real-time Map</h2>
             <MapContainer center={[20.5937, 78.9629]} zoom={5} style={{ height: '400px', borderRadius: '8px' }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapEvents />
               {ticketedVehicles.map(vehicle => (
                 <Marker
                   key={vehicle.id}
@@ -517,6 +540,15 @@ const SpeedViolationDashboard = () => {
                   </Popup>
                 </Marker>
               ))}
+              {selectedLocation && (
+                <Marker position={[selectedLocation.lat, selectedLocation.lng]}>
+                  <Popup>
+                    You clicked here:<br />
+                    Lat: {selectedLocation.lat.toFixed(4)}<br />
+                    Lng: {selectedLocation.lng.toFixed(4)}
+                  </Popup>
+                </Marker>
+              )}
             </MapContainer>
           </div>
           <div style={styles.card}>
@@ -580,9 +612,31 @@ const SpeedViolationDashboard = () => {
           onClose={() => setShowAlertViewer(false)}
         />
       )}
+      <div style={{
+        ...styles.ticketPanel,
+        right: showTickets ? '0' : '-400px'
+      }}>
+        <div style={styles.ticketHeader}>
+          <h2>Ticketed Vehicles</h2>
+          <button style={styles.closeButton} onClick={handleCloseTickets}>
+            <X size={24} />
+          </button>
+        </div>
+        <div style={styles.ticketList}>
+          {ticketedVehicles.map(vehicle => (
+            <div key={vehicle.id} style={styles.ticketItem}>
+              <p><strong>Vehicle ID:</strong> {vehicle.vehicleId}</p>
+              <p><strong>Zone:</strong> {vehicle.zone}</p>
+              <p><strong>Speed:</strong> {vehicle.speed} km/h</p>
+              <p><strong>Time:</strong> {new Date(vehicle.timestamp).toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
+
 
 // Styles for the component
 const styles = {
@@ -629,6 +683,25 @@ const styles = {
     backgroundColor: '#fff',
     borderRadius: '8px',
     boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+  },
+  modal: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: '20px',
+    borderRadius: '8px',
+    maxWidth: '80%',
+    maxHeight: '80%',
+    overflow: 'auto',
   },
   sidebar: {
     width: '200px',
@@ -705,6 +778,41 @@ const styles = {
   statValue: {
     fontSize: '1.5rem',
     fontWeight: 'bold',
+  },
+  ticketPanel: {
+    position: 'fixed',
+    top: 0,
+    right: '-400px',
+    width: '400px',
+    height: '100%',
+    backgroundColor: '#fff',
+    boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.1)',
+    transition: 'right 0.3s ease-in-out',
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  ticketHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px',
+    borderBottom: '1px solid #e0e0e0',
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  ticketList: {
+    overflowY: 'auto',
+    flex: 1,
+    padding: '20px',
+  },
+  ticketItem: {
+    borderBottom: '1px solid #e0e0e0',
+    paddingBottom: '10px',
+    marginBottom: '10px',
   },
   statIcon: {
     color: '#3f51b5',
