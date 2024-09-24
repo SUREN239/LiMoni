@@ -565,6 +565,7 @@ const coimbatoreLocations = [
 // Mock function to simulate receiving data from LoRa module
 const receiveLoRaData = () => {
   const randomLocation = coimbatoreLocations[Math.floor(Math.random() * coimbatoreLocations.length)];
+  const eventType = Math.random() < 0.1 ? (Math.random() < 0.5 ? 'accident' : 'vehicleFailure') : 'normal';
   return {
     vehicleId: `TN-${Math.floor(Math.random() * 100)}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}-${Math.floor(Math.random() * 10000)}`,
     speed: Math.floor(Math.random() * 50) + 30, // 30-80 km/h
@@ -572,6 +573,8 @@ const receiveLoRaData = () => {
     zone: randomLocation.name,
     zoneType: randomLocation.type,
     timestamp: new Date().toISOString(),
+    eventType: eventType,
+    eventDetails: eventType === 'accident' ? 'Collision detected' : (eventType === 'vehicleFailure' ? 'Engine malfunction' : null)
   };
 };
 
@@ -586,6 +589,7 @@ const pingIcon = new L.Icon({
 
 
 const SpeedViolationDashboard = () => {
+  
   const [alerts, setAlerts] = useState([]);
   const [zoneSpeedLimits, setZoneSpeedLimits] = useState(
     Object.fromEntries(coimbatoreLocations.map(loc => [loc.name, 40]))
