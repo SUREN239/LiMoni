@@ -821,7 +821,7 @@ const SpeedViolationDashboard = () => {
             </div>
           )}
           <div style={{ ...styles.card, gridColumn: 'span 2', gridRow: 'span 2' }}>
-            <h2 style={styles.cardHeader}><MapPin style={styles.icon} /> Real-time Map (Coimbatore)</h2>
+            <h2 style={styles.cardHeader}><MapPin style={styles.icon} /> Real-time Map</h2>
             <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '400px', borderRadius: '8px' }} ref={mapRef}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <MapEvents />
