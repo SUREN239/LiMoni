@@ -958,11 +958,11 @@ const SpeedViolationDashboard = () => {
         </div>
       </div>
       {showIncidentManager && (
-        <IncidentManager
-          incidents={alerts.filter(alert => alert.eventType === 'accident' || alert.eventType === 'vehicleFailure')}
-          onClose={() => setShowIncidentManager(false)}
-        />
-      )}
+  <IncidentManager
+    incidents={alerts.filter(alert => alert.eventType === 'accident' || alert.eventType === 'vehicleFailure')}
+    onClose={() => setShowIncidentManager(false)}
+  />
+)}
     </div>
   );
 }
