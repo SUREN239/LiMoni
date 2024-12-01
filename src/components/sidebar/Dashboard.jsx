@@ -24,7 +24,9 @@ import {
   LocationOn as LocationIcon,
   Warning as WarningIcon,
   Sensors as SensorsIcon,
-  NotificationsActive as AlertIcon
+  NotificationsActive as AlertIcon,
+  Speed as SpeedometerIcon,
+  ErrorOutline as ExclamationIcon
 } from '@mui/icons-material';
 import { 
   Card, 
@@ -34,13 +36,39 @@ import {
   Grid, 
   Chip, 
   Box, 
-  Divider,
+  Container,
+  Paper,
   Button
 } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 
 export const Dashboard = () => {
-  // Simulated data matching LiMoni's core features
+  // Quick Statistics Cards Data
+  const quickStatistics = [
+    {
+      icon: <SpeedometerIcon fontSize="large" color="primary" />,
+      title: 'Total Violations',
+      value: '245',
+      change: '+12.4%',
+      color: 'primary'
+    },
+    {
+      icon: <LocationIcon fontSize="large" color="secondary" />,
+      title: 'Monitored Zones',
+      value: '12',
+      change: '+3 New',
+      color: 'secondary'
+    },
+    {
+      icon: <ExclamationIcon fontSize="large" color="error" />,
+      title: 'High-Risk Alerts',
+      value: '37',
+      change: '+5 Recent',
+      color: 'error'
+    }
+  ];
+
+  // Existing data from previous implementation
   const [zoneData] = useState([
     {
       id: 'zone1',
@@ -85,11 +113,50 @@ export const Dashboard = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   return (
-    <Box sx={{ flexGrow: 1, padding: 3, backgroundColor: '#f4f4f4' }}>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Quick Statistics Row */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {quickStatistics.map((stat, index) => (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Paper 
+              elevation={3} 
+              sx={{ 
+                p: 2, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                transition: 'transform 0.3s ease-in-out',
+                '&:hover': {
+                  transform: 'scale(1.02)'
+                }
+              }}
+            >
+              <Box>
+                {stat.icon}
+              </Box>
+              <Box textAlign="right">
+                <Typography variant="h6" color="text.secondary">
+                  {stat.title}
+                </Typography>
+                <Typography variant="h4" fontWeight="bold">
+                  {stat.value}
+                </Typography>
+                <Chip 
+                  label={stat.change} 
+                  size="small" 
+                  variant="outlined"
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Main Dashboard Content - Responsive Grid */}
       <Grid container spacing={3}>
-        {/* Map Section with Zones */}
+        {/* Map Section with Zones - Increased Responsiveness */}
         <Grid item xs={12} md={8}>
-          <Card elevation={3}>
+          <Card elevation={3} sx={{ height: '100%' }}>
             <CardHeader 
               avatar={<LocationIcon color="primary" />}
               title="LiMoni Zone Monitoring"
@@ -101,39 +168,42 @@ export const Dashboard = () => {
                 />
               }
             />
-            <CardContent sx={{ height: 500, position: 'relative' }}>
+            <CardContent sx={{ height: { xs: 300, md: 500 }, position: 'relative' }}>
               <MapContainer 
                 center={[37.7749, -122.4194]} 
                 zoom={11} 
-                style={{ height: '100%', width: '100%', zIndex: 1 }}
+                style={{ 
+                  height: '100%', 
+                  width: '100%', 
+                  zIndex: 1 
+                }}
               >
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; OpenStreetMap contributors'
                 />
                 {zoneData.map((zone) => (
-                  <React.Fragment key={zone.id}>
-                    <Polygon 
-                      positions={zone.coordinates}
-                      color="blue"
-                      fillColor="rgba(0,0,255,0.2)"
-                    >
-                      <Popup>
-                        <Typography variant="h6">{zone.name}</Typography>
-                        <Typography>Speed Limit: {zone.speedLimit} km/h</Typography>
-                        <Typography color="error">
-                          Current Violations: {zone.currentViolations}
-                        </Typography>
-                      </Popup>
-                    </Polygon>
-                  </React.Fragment>
+                  <Polygon 
+                    key={zone.id}
+                    positions={zone.coordinates}
+                    color="blue"
+                    fillColor="rgba(0,0,255,0.2)"
+                  >
+                    <Popup>
+                      <Typography variant="h6">{zone.name}</Typography>
+                      <Typography>Speed Limit: {zone.speedLimit} km/h</Typography>
+                      <Typography color="error">
+                        Current Violations: {zone.currentViolations}
+                      </Typography>
+                    </Popup>
+                  </Polygon>
                 ))}
               </MapContainer>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Statistics Panel */}
+        {/* Statistics Panel - Responsive Adjustments */}
         <Grid item xs={12} md={4}>
           <Grid container spacing={2}>
             {/* Speed Violation Overview */}
@@ -269,7 +339,7 @@ export const Dashboard = () => {
           </Card>
         </Grid>
       </Grid>
-    </Box>
+    </Container>
   );
 };
 
