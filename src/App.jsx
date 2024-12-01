@@ -1,11 +1,10 @@
+import MainDashboard from "./Pages/MainDashboard"
 
-import SpeedViolationDashboard from "./SpeedViolationDashboard"
-import 'react-datepicker/dist/react-datepicker.css';
 
 function App() {
   return(
     <>
-    <SpeedViolationDashboard/>
+     <MainDashboard/>
     </>
   )
  
