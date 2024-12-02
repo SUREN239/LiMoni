@@ -3,12 +3,12 @@ import React from 'react'
 import Navbar from '../components/Navbar'
 import DashboardLayout from '../components/DashboardLayout'
 
-function MainDashboard() {
+function MainDashboard({onLogout}) {
   return (
     <>
       <Navbar/>
       <div className="pt-16 ">
-        <DashboardLayout/>
+        <DashboardLayout onLogout={onLogout}/>
       </div>
     </>
   )
