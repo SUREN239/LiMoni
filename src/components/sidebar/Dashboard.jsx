@@ -154,54 +154,7 @@ export const Dashboard = () => {
 
       {/* Main Dashboard Content - Responsive Grid */}
       <Grid container spacing={3}>
-        {/* Map Section with Zones - Increased Responsiveness */}
-        <Grid item xs={12} md={8}>
-          <Card elevation={3} sx={{ height: '100%' }}>
-            <CardHeader 
-              avatar={<LocationIcon color="primary" />}
-              title="LiMoni Zone Monitoring"
-              action={
-                <Chip 
-                  label="Real-Time Tracking" 
-                  color="primary" 
-                  variant="outlined" 
-                />
-              }
-            />
-            <CardContent sx={{ height: { xs: 300, md: 500 }, position: 'relative' }}>
-              <MapContainer 
-                center={[37.7749, -122.4194]} 
-                zoom={11} 
-                style={{ 
-                  height: '100%', 
-                  width: '100%', 
-                  zIndex: 1 
-                }}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; OpenStreetMap contributors'
-                />
-                {zoneData.map((zone) => (
-                  <Polygon 
-                    key={zone.id}
-                    positions={zone.coordinates}
-                    color="blue"
-                    fillColor="rgba(0,0,255,0.2)"
-                  >
-                    <Popup>
-                      <Typography variant="h6">{zone.name}</Typography>
-                      <Typography>Speed Limit: {zone.speedLimit} km/h</Typography>
-                      <Typography color="error">
-                        Current Violations: {zone.currentViolations}
-                      </Typography>
-                    </Popup>
-                  </Polygon>
-                ))}
-              </MapContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+
 
         {/* Statistics Panel - Responsive Adjustments */}
         <Grid item xs={12} md={4}>
@@ -263,6 +216,55 @@ export const Dashboard = () => {
               </Card>
             </Grid>
           </Grid>
+        </Grid>
+
+                {/* Map Section with Zones - Increased Responsiveness */}
+                <Grid item xs={12} md={8}>
+          <Card elevation={3} sx={{ height: '100%' }}>
+            <CardHeader 
+              avatar={<LocationIcon color="primary" />}
+              title="LiMoni Zone Monitoring"
+              action={
+                <Chip 
+                  label="Real-Time Tracking" 
+                  color="primary" 
+                  variant="outlined" 
+                />
+              }
+            />
+            <CardContent sx={{ height: { xs: 300, md: 500 }, position: 'relative' }}>
+              <MapContainer 
+                center={[37.7749, -122.4194]} 
+                zoom={11} 
+                style={{ 
+                  height: '100%', 
+                  width: '100%', 
+                  zIndex: 1 
+                }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; OpenStreetMap contributors'
+                />
+                {zoneData.map((zone) => (
+                  <Polygon 
+                    key={zone.id}
+                    positions={zone.coordinates}
+                    color="blue"
+                    fillColor="rgba(0,0,255,0.2)"
+                  >
+                    <Popup>
+                      <Typography variant="h6">{zone.name}</Typography>
+                      <Typography>Speed Limit: {zone.speedLimit} km/h</Typography>
+                      <Typography color="error">
+                        Current Violations: {zone.currentViolations}
+                      </Typography>
+                    </Popup>
+                  </Polygon>
+                ))}
+              </MapContainer>
+            </CardContent>
+          </Card>
         </Grid>
 
         {/* Alerts and Notifications */}
