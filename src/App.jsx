@@ -1,86 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { checkAuth } from './service/authService';
 import MainDashboard from "./Pages/MainDashboard";
 import Login from "./Pages/Login";
+import { CircularProgress, Box } from '@mui/material';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Static credentials for demo purposes
-  const staticCredentials = {
-    username: 'demo',
-    password: 'password123'
-  };
-
-  // Check authentication on component mount
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    setIsAuthenticated(!!token);
+    const auth = checkAuth();
+    setIsAuthenticated(auth);
     setIsLoading(false);
   }, []);
 
-  // Login handler
-  const handleLogin = (username, password) => {
-    if (
-      username === staticCredentials.username && 
-      password === staticCredentials.password
-    ) {
-      // Store a token in localStorage
-      localStorage.setItem('authToken', JSON.stringify({
-        timestamp: Date.now()
-      }));
-      setIsAuthenticated(true);
-      return true;
-    } else {
-      alert('Invalid credentials');
-      return false;
-    }
-  };
-
-  // Logout handler
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    setIsAuthenticated(false);
-  };
-
-  // Protected Route Component
   const ProtectedRoute = ({ children }) => {
     if (isLoading) {
-      return <div>Loading...</div>; // Or a spinner component
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress sx={{ color: '#F6C000' }} />
+        </Box>
+      );
     }
-
     return isAuthenticated ? children : <Navigate to="/login" replace />;
   };
 
   return (
     <Router>
       <Routes>
-        <Route 
-          path="/login" 
-          element={<Login onLogin={handleLogin} />} 
-        />
-        <Route 
-          path="/dashboard" 
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
-              <MainDashboard onLogout={handleLogout} />
+              <MainDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        {/* Redirect to login if accessing root */}
-        <Route 
-          path="/" 
-          element={<Navigate to="/login" replace />} 
-        />
-        {/* Catch-all route */}
-        <Route 
-          path="*" 
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route
+          path="*"
           element={
             isAuthenticated ? 
             <Navigate to="/dashboard" replace /> : 
             <Navigate to="/login" replace />
-          } 
+          }
         />
       </Routes>
     </Router>

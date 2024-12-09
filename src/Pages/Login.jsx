@@ -7,23 +7,31 @@ import {
   Box, 
   Link, 
   IconButton, 
-  InputAdornment 
+  InputAdornment,
+  Alert,
+  Snackbar 
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../service/authService';
 
-export default function Login({ onLogin }) {
+export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const loginSuccessful = onLogin(username, password);
-    
-    if (loginSuccessful) {
-      navigate('/dashboard');
+    try {
+      const { success } = await login(username, password);
+      if (success) {
+        console.log("Testing success")
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -39,6 +47,16 @@ export default function Login({ onLogin }) {
       justifyContent: 'center', 
       height: '100vh' 
     }}>
+      <Snackbar 
+        open={!!error} 
+        autoHideDuration={6000} 
+        onClose={() => setError('')}
+      >
+        <Alert severity="error" onClose={() => setError('')}>
+          {error}
+        </Alert>
+      </Snackbar>
+
       <Box sx={{
         display: 'flex',
         flexDirection: 'column',
