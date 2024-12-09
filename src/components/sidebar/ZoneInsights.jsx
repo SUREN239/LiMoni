@@ -16,16 +16,23 @@ import {
   Box,
   CircularProgress,
   Alert,
-  Chip
+  Chip,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from '@mui/material';
 
 export const ZoneInsights = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  
   const [flaggedData, setFlaggedData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [selectedFlaggedId, setSelectedFlaggedId] = useState(null);
 
   useEffect(() => {
     const fetchFlaggedData = async () => {
@@ -47,12 +54,30 @@ export const ZoneInsights = () => {
     fetchFlaggedData();
   }, [activeTab]);
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  const handleTicketCreation = async () => {
+    try {
+      const response = await axios.post(`http://localhost:5000/ticket/${selectedFlaggedId}`);
+      
+      // Update local state to reflect ticketed status
+      setFlaggedData(prev => 
+        prev.map(item => 
+          item.flaggedID === selectedFlaggedId 
+            ? {...item, ticketed: true} 
+            : item
+        )
+      );
+
+      // Show success message
+      alert(response.data.message);
+      setOpenConfirmDialog(false);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create ticket');
+    }
   };
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
+  const handleOpenTicketConfirmation = (flaggedId) => {
+    setSelectedFlaggedId(flaggedId);
+    setOpenConfirmDialog(true);
   };
 
   const filteredFlaggedData = flaggedData.filter(item => 
@@ -67,7 +92,7 @@ export const ZoneInsights = () => {
       </Typography>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={activeTab} onChange={handleTabChange}>
+        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
           <Tab label="Zone Real-Time" />
           <Tab label="Zone Speed Mapping" />
           <Tab label="Flagged Violations" />
@@ -79,7 +104,7 @@ export const ZoneInsights = () => {
         variant="outlined"
         label="Search Vehicle/Zone"
         value={searchTerm}
-        onChange={handleSearchChange}
+        onChange={(e) => setSearchTerm(e.target.value)}
         sx={{ mb: 2 }}
       />
 
@@ -98,13 +123,11 @@ export const ZoneInsights = () => {
                   <TableRow>
                     <TableCell>Vehicle Number</TableCell>
                     <TableCell>Zone Name</TableCell>
-                    <TableCell>Zone Type</TableCell>
                     <TableCell>Exceeded Speed</TableCell>
-                    <TableCell>Threshold Speed</TableCell>
                     <TableCell>Violated Duration</TableCell>
-                    <TableCell>Violated Date</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Fare</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -112,11 +135,8 @@ export const ZoneInsights = () => {
                     <TableRow key={item.flaggedID}>
                       <TableCell>{item.vehicleData.vehicleNumber}</TableCell>
                       <TableCell>{item.violatedZones.zoneName}</TableCell>
-                      <TableCell>{item.violatedZones.zoneType}</TableCell>
                       <TableCell>{item.exceededSpeed} km/h</TableCell>
-                      <TableCell>{item.violatedZones.zoneThresholdSpeed} km/h</TableCell>
                       <TableCell>{item.violatedDuration} mins</TableCell>
-                      <TableCell>{item.violatedDate}</TableCell>
                       <TableCell>
                         <Chip 
                           label={item.ticketed ? 'Ticketed' : 'Pending'} 
@@ -125,6 +145,17 @@ export const ZoneInsights = () => {
                         />
                       </TableCell>
                       <TableCell>${item.ticketedFare.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="contained" 
+                          color="primary" 
+                          size="small"
+                          disabled={item.ticketed}
+                          onClick={() => handleOpenTicketConfirmation(item.flaggedID)}
+                        >
+                          Create Ticket
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -133,6 +164,26 @@ export const ZoneInsights = () => {
           )}
         </>
       )}
+
+      <Dialog
+        open={openConfirmDialog}
+        onClose={() => setOpenConfirmDialog(false)}
+      >
+        <DialogTitle>Confirm Ticket Creation</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to create a ticket for this violation?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirmDialog(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleTicketCreation} color="error" autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
