@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { 
   Container, 
   Typography, 
@@ -6,52 +7,52 @@ import {
   Card, 
   CardHeader, 
   CardContent, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper,
   Button,
   Box
 } from '@mui/material';
 import { 
   AssessmentOutlined as ReportIcon, 
-  FileDownloadOutlined as DownloadIcon 
+  FileDownloadOutlined as DownloadIcon
 } from '@mui/icons-material';
 
 export const Reports = () => {
-  const [reports] = useState([
-    {
-      id: 1,
-      title: 'Monthly Speed Violation Report',
-      date: '2024-05-31',
-      totalViolations: 245,
-      zones: ['Residential', 'Highway', 'School'],
-      status: 'Completed'
-    },
-    {
-      id: 2,
-      title: 'Quarterly Traffic Safety Analysis',
-      date: '2024-06-15',
-      totalViolations: 712,
-      zones: ['All Zones'],
-      status: 'In Progress'
-    },
-    {
-      id: 3,
-      title: 'Annual Incident Summary',
-      date: '2024-12-31',
-      totalViolations: 0,
-      zones: ['Citywide'],
-      status: 'Pending'
-    }
-  ]);
+  const [dateRange, setDateRange] = useState({
+    startDate: '',
+    endDate: ''
+  });
 
-  const handleDownloadReport = (report) => {
-    // Placeholder for report download functionality
-    console.log(`Downloading report: ${report.title}`);
+  const handleDownloadAllReport = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/zone-insight-report/export-to-pdf', {
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `Zone_Insights_${new Date().toISOString().slice(0,10)}.pdf`;
+      link.click();
+    } catch (error) {
+      console.error('Download failed', error);
+    }
+  };
+
+  const handleDownloadDateRangeReport = async () => {
+    const { startDate, endDate } = dateRange;
+    
+    try {
+      const response = await axios.get(`http://localhost:5000/zone-insight-report/by-date/export-to-pdf/${startDate}/${endDate}`, {
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `Zone_Insights_${startDate}_to_${endDate}.pdf`;
+      link.click();
+    } catch (error) {
+      console.error('Download failed', error);
+    }
   };
 
   return (
@@ -66,64 +67,61 @@ export const Reports = () => {
         }}
       >
         <ReportIcon sx={{ mr: 2 }} color="primary" />
-        Reports Dashboard
+        Zone Insights Reports
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid item xs={12} md={6}>
           <Card elevation={3}>
             <CardHeader 
-              title="Generated Reports" 
-              subheader="List of generated and pending reports"
+              title="All Zone Insights" 
+              subheader="Download full zone insights report"
             />
             <CardContent>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Report Title</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Total Violations</TableCell>
-                      <TableCell>Zones Covered</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {reports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell>{report.title}</TableCell>
-                        <TableCell>{report.date}</TableCell>
-                        <TableCell>{report.totalViolations}</TableCell>
-                        <TableCell>{report.zones.join(', ')}</TableCell>
-                        <TableCell>
-                          <Box 
-                            sx={{ 
-                              color: 
-                                report.status === 'Completed' ? 'success.main' :
-                                report.status === 'In Progress' ? 'warning.main' :
-                                'text.secondary'
-                            }}
-                          >
-                            {report.status}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outlined"
-                            color="primary"
-                            startIcon={<DownloadIcon />}
-                            onClick={() => handleDownloadReport(report)}
-                            disabled={report.status !== 'Completed'}
-                          >
-                            Download
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<DownloadIcon />}
+                onClick={handleDownloadAllReport}
+                fullWidth
+              >
+                Download Full Report
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card elevation={3}>
+            <CardHeader 
+              title="Date Range Report" 
+              subheader="Download zone insights for specific dates"
+            />
+            <CardContent>
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <input 
+                  type="date" 
+                  value={dateRange.startDate}
+                  onChange={(e) => setDateRange(prev => ({...prev, startDate: e.target.value}))}
+                  style={{ flexGrow: 1, padding: '10px' }}
+                />
+                <input 
+                  type="date" 
+                  value={dateRange.endDate}
+                  onChange={(e) => setDateRange(prev => ({...prev, endDate: e.target.value}))}
+                  style={{ flexGrow: 1, padding: '10px' }}
+                />
+              </Box>
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<DownloadIcon />}
+                onClick={handleDownloadDateRangeReport}
+                disabled={!dateRange.startDate || !dateRange.endDate}
+                fullWidth
+              >
+                Download Date Range Report
+              </Button>
             </CardContent>
           </Card>
         </Grid>
