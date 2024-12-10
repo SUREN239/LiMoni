@@ -41,7 +41,6 @@ const Logout = ({ onLogout }) => {
 
   return (
     <div className="p-6 text-center">
-      <h2 className="text-2xl mb-4">Logout</h2>
       <p className="mb-6">Are you sure you want to log out?</p>
       <button 
         onClick={handleLogout}
