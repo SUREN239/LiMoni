@@ -17,7 +17,13 @@ import {
   Box,
   Chip,
   IconButton,
-  TableFooter
+  TableFooter,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Button,
+  TextField
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import PropTypes from 'prop-types';
@@ -143,6 +149,14 @@ export const TicketingPage = () => {
   // State for expanded rows
   const [expandedRows, setExpandedRows] = useState({});
 
+  // State for ticket conversion modal
+  const [convertTicketModal, setConvertTicketModal] = useState({
+    open: false,
+    ticketId: null,
+    currentFare: 0,
+    newFare: 0
+  });
+
   const fetchViolations = async (pageNumber, pageSize) => {
     try {
       setLoading(true);
@@ -202,6 +216,51 @@ export const TicketingPage = () => {
     }));
   };
 
+  // Open ticket conversion modal
+  const openConvertTicketModal = (ticket) => {
+    setConvertTicketModal({
+      open: true,
+      ticketId: ticket.tid,
+      currentFare: Number(ticket.ticketedFare),
+      newFare: Number(ticket.ticketedFare)
+    });
+  };
+
+  // Handle ticket conversion
+  const handleConvertTicket = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.put(
+        `http://localhost:5000/update-cumulative-ticket/${convertTicketModal.ticketId}/${convertTicketModal.newFare}`, 
+        null,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // Update the local state to reflect the changes
+      setViolations(prev => prev.map(violation => 
+        violation.tid === convertTicketModal.ticketId 
+          ? { 
+              ...violation, 
+              ticketed: true, 
+              ticketedFare: safeFormat(convertTicketModal.newFare) 
+            } 
+          : violation
+      ));
+
+      // Close the modal
+      setConvertTicketModal({ open: false, ticketId: null, currentFare: 0, newFare: 0 });
+    } catch (err) {
+      console.error('Error converting ticket:', err);
+      alert(`Failed to convert ticket: ${err.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <Box className="flex items-center justify-center min-h-screen">
@@ -241,6 +300,7 @@ export const TicketingPage = () => {
               <TableCell className="font-semibold">Status</TableCell>
               <TableCell className="font-semibold">Flagged</TableCell>
               <TableCell className="font-semibold">Ticketed</TableCell>
+              <TableCell className="font-semibold">Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -293,6 +353,17 @@ export const TicketingPage = () => {
                         size="small"
                       />
                     </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="contained" 
+                        color="primary" 
+                        size="small"
+                        disabled={violation.ticketed}
+                        onClick={() => openConvertTicketModal(violation)}
+                      >
+                        Convert Ticket
+                      </Button>
+                    </TableCell>
                   </TableRow>
                   {violation.flagged && expandedRows[key] && (
                     <DetailedViolationsRow 
@@ -308,7 +379,7 @@ export const TicketingPage = () => {
             <TableRow>
               <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
-                colSpan={10}
+                colSpan={11}
                 count={totalRows}
                 rowsPerPage={rowsPerPage}
                 page={page}
@@ -319,28 +390,54 @@ export const TicketingPage = () => {
           </TableFooter>
         </Table>
       </TableContainer>
+
+      {/* Ticket Conversion Modal */}
+      <Dialog
+        open={convertTicketModal.open}
+        onClose={() => setConvertTicketModal({ open: false, ticketId: null, currentFare: 0, newFare: 0 })}
+        aria-labelledby="ticket-conversion-dialog"
+      >
+        <DialogTitle id="ticket-conversion-dialog">Convert Ticket</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Current Fare"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={convertTicketModal.currentFare}
+            disabled
+          />
+          <TextField
+            margin="dense"
+            label="New Fare"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={convertTicketModal.newFare}
+            onChange={(e) => setConvertTicketModal(prev => ({
+              ...prev, 
+              newFare: Number(e.target.value)
+            }))}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setConvertTicketModal({ open: false, ticketId: null, currentFare: 0, newFare: 0 })}
+            color="secondary"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConvertTicket} 
+            color="primary" 
+            variant="contained"
+          >
+            Convert
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
-
-// PropTypes for type checking with more robust definitions
-TicketingPage.propTypes = {
-  violations: PropTypes.arrayOf(
-    PropTypes.shape({
-      tid: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
-      violatedDate: PropTypes.string,
-      exceededSpeed: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-      flagged: PropTypes.bool,
-      ticketed: PropTypes.bool,
-      ticketedFare: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-      violatedDuration: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-      status: PropTypes.string,
-      vehicleData: PropTypes.shape({
-        vehicleNumber: PropTypes.string,
-        contactNumber: PropTypes.string
-      })
-    })
-  )
-};
-
-export default TicketingPage;
