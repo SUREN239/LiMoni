@@ -33,11 +33,17 @@ import SpeedBreakerChatbot from './SpeedBreakerChatBot';
 const Logout = ({ onLogout }) => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    onLogout();
-    navigate('/login');
-  };
+  
+    const handleLogout = () => {
+      // Clear local storage
+      localStorage.removeItem('token');
+      
+      // Call logout method to clear any auth state
+      onLogout();
+      
+      // Perform a full page reload to reset all application state
+      window.location.href = '/login';
+    };
 
   return (
     <div className="p-6 text-center">

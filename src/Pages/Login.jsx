@@ -22,16 +22,15 @@ export default function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { success } = await login(username, password);
-      if (success) {
-        console.log("Testing success")
+      const result = await login(username, password);
+      if (result.success) {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.message);
+      setError(err);
     }
   };
 
@@ -82,7 +81,7 @@ export default function Login() {
           </Typography>
         </Typography>
 
-        <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <TextField
             variant="outlined"
             margin="normal"

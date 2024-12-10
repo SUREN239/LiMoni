@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { checkAuth } from './service/authService';
+import { checkAuth, logout } from './service/authService';
 import MainDashboard from "./Pages/MainDashboard";
 import Login from "./Pages/Login";
 import { CircularProgress, Box } from '@mui/material';
@@ -14,6 +14,12 @@ function App() {
     setIsAuthenticated(auth);
     setIsLoading(false);
   }, []);
+
+  const handleLogout = () => {
+    // Perform logout operations
+    logout();
+    setIsAuthenticated(false);
+  };
 
   const ProtectedRoute = ({ children }) => {
     if (isLoading) {
@@ -29,16 +35,19 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route 
+          path="/" 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} 
+        />
         <Route path="/login" element={<Login />} />
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <MainDashboard />
+              <MainDashboard onLogout={handleLogout} />
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route
           path="*"
           element={
