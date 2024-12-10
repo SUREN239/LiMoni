@@ -25,8 +25,10 @@ import {
   Button,
   TextField
 } from '@mui/material';
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import PropTypes from 'prop-types';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+
+import { Timeline, TimelineItem, TimelineSeparator, TimelineConnector, TimelineContent, TimelineDot } from '@mui/lab';import PropTypes from 'prop-types';
 import _ from 'lodash';
 
 // Utility function to safely convert to number and format
@@ -36,13 +38,13 @@ const safeFormat = (value, decimals = 2) => {
   return isNaN(num) ? '0.00' : num.toFixed(decimals);
 };
 
-// Detailed Violations Row Component
-const DetailedViolationsRow = ({ vehicleNumber, violatedDate }) => {
-  const [detailedViolations, setDetailedViolations] = useState([]);
+// Flagged Violations Timeline Component
+const FlaggedViolationsTimeline = ({ vehicleNumber, violatedDate }) => {
+  const [flaggedViolations, setFlaggedViolations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchDetailedViolations = async () => {
+  const fetchFlaggedViolations = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -54,23 +56,23 @@ const DetailedViolationsRow = ({ vehicleNumber, violatedDate }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setDetailedViolations(response.data || []);
+      setFlaggedViolations(response.data || []);
       setLoading(false);
     } catch (err) {
       setError(err.message);
       setLoading(false);
-      setDetailedViolations([]);
+      setFlaggedViolations([]);
     }
   };
 
   useEffect(() => {
-    fetchDetailedViolations();
+    fetchFlaggedViolations();
   }, [vehicleNumber, violatedDate]);
 
   if (loading) return (
     <TableRow>
-      <TableCell colSpan={9}>
-        <Box display="flex" justifyContent="center">
+      <TableCell colSpan={11}>
+        <Box className="flex justify-center items-center p-4">
           <CircularProgress size={24} />
         </Box>
       </TableCell>
@@ -79,17 +81,17 @@ const DetailedViolationsRow = ({ vehicleNumber, violatedDate }) => {
 
   if (error) return (
     <TableRow>
-      <TableCell colSpan={9}>
+      <TableCell colSpan={11}>
         <Alert severity="error">{error}</Alert>
       </TableCell>
     </TableRow>
   );
 
-  if (detailedViolations.length === 0) return (
+  if (flaggedViolations.length === 0) return (
     <TableRow>
-      <TableCell colSpan={9}>
+      <TableCell colSpan={11}>
         <Typography variant="body2" color="textSecondary" align="center">
-          No detailed violations found
+          No flagged violations found
         </Typography>
       </TableCell>
     </TableRow>
@@ -97,41 +99,56 @@ const DetailedViolationsRow = ({ vehicleNumber, violatedDate }) => {
 
   return (
     <TableRow>
-      <TableCell colSpan={10}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Violated Zone</TableCell>
-              <TableCell>Exceeded Speed (km/h)</TableCell>
-              <TableCell>Violated Duration (min)</TableCell>
-              <TableCell>Ticketed Fare (₹)</TableCell>
-              <TableCell>Ticketed</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {detailedViolations.map((violation, index) => (
-              <TableRow key={index}>
-                <TableCell>{_.get(violation, 'violatedZones.zoneName', 'N/A')}</TableCell>
-                <TableCell>{safeFormat(violation.exceededSpeed)}</TableCell>
-                <TableCell>{safeFormat(violation.violatedDuration)}</TableCell>
-                <TableCell>{safeFormat(violation.ticketedFare)}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={violation.ticketed ? 'Yes' : 'No'} 
-                    color={violation.ticketed ? 'success' : 'default'}
-                    size="small"
+      <TableCell colSpan={11}>
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <Timeline position="alternate" className="w-full">
+            {flaggedViolations.map((violation, index) => (
+              <TimelineItem key={index}>
+                <TimelineSeparator>
+                  <TimelineDot 
+                    color={violation.ticketed ? 'success' : 'error'} 
+                    variant="outlined" 
                   />
-                </TableCell>
-              </TableRow>
+                  {index < flaggedViolations.length - 1 && <TimelineConnector />}
+                </TimelineSeparator>
+                <TimelineContent>
+                  <Paper elevation={3} className="p-4 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <Typography variant="h6" className="text-sm font-bold">
+                        Violation in {_.get(violation, 'violatedZones.zoneName', 'Unknown Zone')}
+                      </Typography>
+                      <Chip 
+                        label={violation.ticketed ? 'Ticketed' : 'Pending'} 
+                        color={violation.ticketed ? 'success' : 'warning'}
+                        size="small"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Typography variant="body2">
+                        <strong>Exceeded Speed:</strong> {safeFormat(violation.exceededSpeed)} km/h
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Duration:</strong> {safeFormat(violation.violatedDuration)} min
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Ticketed Fare:</strong> ₹{safeFormat(violation.ticketedFare)}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Violation Time:</strong> {new Date(violation.violatedTime).toLocaleTimeString()}
+                      </Typography>
+                    </div>
+                  </Paper>
+                </TimelineContent>
+              </TimelineItem>
             ))}
-          </TableBody>
-        </Table>
+          </Timeline>
+        </div>
       </TableCell>
     </TableRow>
   );
 };
 
-DetailedViolationsRow.propTypes = {
+FlaggedViolationsTimeline.propTypes = {
   vehicleNumber: PropTypes.string.isRequired,
   violatedDate: PropTypes.string.isRequired
 };
@@ -318,7 +335,7 @@ export const TicketingPage = () => {
                         onClick={() => toggleRowExpansion(vehicleNumber, violation.violatedDate)}
                         disabled={!violation.flagged}
                       >
-                        {expandedRows[key] && violation.flagged ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                        {expandedRows[key] && violation.flagged ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                       </IconButton>
                     </TableCell>
                     <TableCell>{vehicleNumber}</TableCell>
@@ -366,7 +383,7 @@ export const TicketingPage = () => {
                     </TableCell>
                   </TableRow>
                   {violation.flagged && expandedRows[key] && (
-                    <DetailedViolationsRow 
+                    <FlaggedViolationsTimeline 
                       vehicleNumber={vehicleNumber}
                       violatedDate={violation.violatedDate}
                     />
